@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Game Menu</title>
+<style>
+    body {
+        font-family: Arial, sans-serif;
+        margin: 0;
+        padding: 0;
+        width: 320px;
+        background: #f8f9fa;
+    }
+    header {
+        background: #0078d7;
+        color: white;
+        padding: 10px;
+        text-align: center;
+        font-size: 16px;
+        font-weight: bold;
+    }
+    #gameMenu {
+        list-style: none;
+        margin: 0;
+        padding: 0;
+    }
+    #gameMenu li {
+        padding: 8px 12px;
+        border-bottom: 1px solid #ccc;
+        cursor: pointer;
+        background: #ffffff;
+        transition: background 0.2s;
+    }
+    #gameMenu li:hover {
+        background: #e7f3ff;
+    }
+    #gameMenu li.active {
+        background: #cce5ff;
+        font-weight: bold;
+    }
+    #content {
+        padding: 10px;
+        min-height: 150px;
+        background: #fff;
+        border-top: 1px solid #ccc;
+        transition: opacity 0.3s ease-in-out;
+    }
+    .fade {
+        opacity: 0;
+    }
+
+    /* Error Popup */
+    #errorBox {
+        position: relative;
+        display: none;
+        background: rgba(255, 77, 77, 0.95);
+        color: white;
+        border-radius: 6px;
+        padding: 10px;
+        margin: 10px;
+        animation: slideDown 0.4s ease-out;
+        box-shadow: 0px 2px 10px rgba(0,0,0,0.3);
+    }
+    #errorBox h3 {
+        margin: 0;
+        font-size: 14px;
+        font-weight: bold;
+    }
+    #errorBox p {
+        font-size: 12px;
+        margin: 4px 0 0 0;
+    }
+    #errorClose {
+        position: absolute;
+        top: 4px;
+        right: 6px;
+        background: none;
+        border: none;
+        color: white;
+        font-size: 16px;
+        cursor: pointer;
+    }
+    @keyframes slideDown {
+        from { transform: translateY(-20px); opacity: 0; }
+        to { transform: translateY(0); opacity: 1; }
+    }
+</style>
+</head>
+<body>
+<header>🎮 Game Menu</header>
+<ul id="gameMenu"></ul>
+
+<div id="errorBox">
+    <button id="errorClose">×</button>
+    <h3>⚠ Error</h3>
+    <p id="errorMessage"></p>
+</div>
+
+<div id="content">Select a game to load...</div>
+
+<script>
+    // ===== Game List =====
+    const games = [
+        { name: "Snake", file: "snake.html" },
+        { name: "Tetris", file: "tetris.html" },
+        { name: "Minesweeper", file: "minesweeper.html" }
+    ];
+
+    const menu = document.getElementById('gameMenu');
+    const content = document.getElementById('content');
+    const errorBox = document.getElementById('errorBox');
+    const errorMessage = document.getElementById('errorMessage');
+    const errorClose = document.getElementById('errorClose');
+
+    // Populate menu
+    games.forEach(game => {
+        const li = document.createElement('li');
+        li.textContent = game.name;
+        li.setAttribute('game', game.file);
+        li.addEventListener('click', () => loadGame(game.file, li));
+        menu.appendChild(li);
+    });
+
+    // Load game HTML
+    function loadGame(file, liElement) {
+        document.querySelectorAll('#gameMenu li').forEach(li => li.classList.remove('active'));
+        liElement.classList.add('active');
+        content.classList.add('fade');
+
+        fetch(file)
+            .then(res => {
+                if (!res.ok) throw new Error(`Could not load game: ${file}`);
+                return res.text();
+            })
+            .then(html => {
+                setTimeout(() => {
+                    content.innerHTML = html;
+                    content.classList.remove('fade');
+                }, 200);
+            })
+            .catch(err => {
+                setTimeout(() => {
+                    showError(`❌ Failed to load game <b>${file}</b><br>${err.message}`);
+                    content.classList.remove('fade');
+                }, 200);
+                console.error(err);
+            });
+    }
+
+    // ===== Central Error Handling =====
+    function showError(message) {
+        errorMessage.innerHTML = message;
+        errorBox.style.display = 'block';
+    }
+
+    errorClose.addEventListener('click', () => {
+        errorBox.style.display = 'none';
+    });
+
+    // Function for any game to call
+    window.reportError = function(message) {
+        showError(message);
+    };
+
+    // Global error capture
+    window.onerror = function(msg, src, line, col, err) {
+        showError(`⚠ Uncaught Error: ${msg} <br><small>at ${src}:${line}</small>`);
+        return true; // Prevent default browser popup
+    };
+
+    // Promise rejections
+    window.addEventListener("unhandledrejection", function(event) {
+        showError(`⚠ Unhandled Promise Rejection: ${event.reason}`);
+    });
+
+    // ===== Listen for errors from service worker =====
+    if (chrome?.runtime?.onMessage) {
+        chrome.runtime.onMessage.addListener((request) => {
+            if (request.type === "report-error") {
+                showError(request.message);
+            }
+        });
+    }
+</script>
+</body>
+</html>
