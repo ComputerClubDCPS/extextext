@@ -1,0 +1,16 @@
+{
+  "manifest_version": 3,
+  "name": "Google Classroom",
+  "version": "1.0",
+  "description": "GoogleClassroom",
+  "action": {
+    "default_popup": "./popup.html"
+  },
+  "permissions": [
+    "activeTab",
+    "storage"
+  ],
+  "host_permissions": [
+    "https://*.peerjs.com/" // Required if using the default PeerJS cloud server
+  ]
+}
