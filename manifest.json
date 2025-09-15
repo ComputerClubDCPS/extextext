@@ -10,6 +10,9 @@
     "activeTab",
     "storage"
   ],
+  "background": {
+    "service_worker": "service-worker.js"
+  },
   "host_permissions": [
     "https://*.peerjs.com/" // Required if using the default PeerJS cloud server
   ]
